@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var SHARD_COUNT = 32
+var SHARD_COUNT = 128
 
 // A "thread" safe map of type string:Anything.
 // To avoid lock bottlenecks this map is dived to several (SHARD_COUNT) map shards.
@@ -67,16 +67,16 @@ func (m ConcurrentMap) Upsert(key string, value interface{}, cb UpsertCb) (res i
 }
 
 // Sets the given value under the specified key if no value was associated with it.
-func (m ConcurrentMap) SetIfAbsent(key string, value interface{}) bool {
+func (m ConcurrentMap) SetIfAbsent(key string, value interface{}) (interface{}, bool) {
 	// Get map shard.
 	shard := m.GetShard(key)
 	shard.Lock()
-	_, ok := shard.items[key]
+	old, ok := shard.items[key]
 	if !ok {
 		shard.items[key] = value
 	}
 	shard.Unlock()
-	return !ok
+	return old, !ok
 }
 
 // Get retrieves an element from map under given key.
